@@ -4,6 +4,9 @@ from PIL import Image, UnidentifiedImageError
 from io import BytesIO
 import urllib.request
 
+def get_extension(url_str):
+    return '.' + url_str.split('.')[-1]
+
 def get_random_image():
     url = "https://commons.wikimedia.org/w/api.php"
     params = {
@@ -26,13 +29,13 @@ def get_random_image():
     if "mime" in image_info and image_info["mime"].startswith("image/"):
         image_response = requests.get(image_url)
         try:
-            urllib.request.urlretrieve( 
-            'https://media.geeksforgeeks.org/wp-content/uploads/20210318103632/gfg-300x300.png', 
-            "tmp.png") 
+            ext = get_extension(image_url)
+            urllib.request.urlretrieve(image_url, "tmp"+ ext)
 
-            img = Image.open(BytesIO(image_response.content))
-            img.verify()  # Verify that it is, in fact, an image
-            img = Image.open(BytesIO(image_response.content))  # Reopen the image
+            img = Image.open("tmp" + ext) 
+            img.verify()  
+            img = Image.open("tmp" + ext) 
+            return img
         except UnidentifiedImageError:
             print("Error: Cannot identify image file.")
             return None
@@ -47,17 +50,26 @@ def save_image(image_url, file_name):
     with open(file_name, 'wb') as file:
         file.write(image_response.content)
 
+def rgb_to_hex(r, g, b):
+    return f'#{r:02x}{g:02x}{b:02x}'
+
+def get_hexes(img): 
+    pixels = img.load()
+    width, height = img.size
+    unique_hexes = set()
+    for x in range(width):
+        for y in range(height):
+            r, g, b = pixels[x, y]
+            hex_color = rgb_to_hex(r, g, b)
+            unique_hexes.add(hex_color)
+    return list(unique_hexes)
+
 if __name__ == "__main__":
     img = get_random_image()
     if img:
         img.show()  # Display the image
         image_url = img.filename
         print(f"Random Image URL: {image_url}")
-        save_image(image_url, "random_image.jpg")
-
-def get_hexes(img): 
-    pixels = img.load()
-    width, height = img.size
-    for x in range(width):
-        for y in range(height):
-            r, g, b = pixels[x,y]
+        
+        hex_colors = get_hexes(img)
+        print(f"Unique Hex Colors: {hex_colors}")
