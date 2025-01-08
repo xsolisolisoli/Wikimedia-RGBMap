@@ -3,6 +3,8 @@ import random
 from PIL import Image, UnidentifiedImageError
 from io import BytesIO
 import urllib.request
+import json
+from pymongo import MongoClient
 
 def get_extension(url_str):
     return '.' + url_str.split('.')[-1]
@@ -65,6 +67,11 @@ def get_hexes(img):
     return list(unique_hexes)
 
 if __name__ == "__main__":
+    conx = "your_mongodb_connection_string_here"
+    client = MongoClient(conx)
+    db = client['your_database_name']
+    collection = db['your_collection_name']
+
     img = get_random_image()
     if img:
         img.show()  # Display the image
@@ -73,3 +80,10 @@ if __name__ == "__main__":
         
         hex_colors = get_hexes(img)
         print(f"Unique Hex Colors: {hex_colors}")
+        
+        # Convert hex colors to JSON
+        hex_colors_json = json.dumps(hex_colors)
+        
+        # Insert JSON into MongoDB
+        collection.insert_one({"hex_colors": hex_colors_json})
+        print("Hex colors inserted into MongoDB")
