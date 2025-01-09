@@ -4,7 +4,7 @@ from PIL import Image, UnidentifiedImageError
 from io import BytesIO
 import urllib.request
 import json
-from pymongo import MongoClient
+import os
 
 def get_extension(url_str):
     return '.' + url_str.split('.')[-1]
@@ -56,6 +56,7 @@ def rgb_to_hex(r, g, b):
     return f'#{r:02x}{g:02x}{b:02x}'
 
 def get_hexes(img): 
+    img = img.convert("RGB")  # Ensure image is in RGB mode
     pixels = img.load()
     width, height = img.size
     unique_hexes = set()
@@ -66,17 +67,12 @@ def get_hexes(img):
             unique_hexes.add(hex_color)
     return list(unique_hexes)
 
-if __name__ == "__main__":
-    conx = "your_mongodb_connection_string_here"
-    client = MongoClient(conx)
-    db = client['your_database_name']
-    collection = db['your_collection_name']
-
-    img = get_random_image()
-    if img:
-        img.show()  # Display the image
-        image_url = img.filename
-        print(f"Random Image URL: {image_url}")
+def process_local_image():
+    try:
+        local_image_path = os.path.join(os.getcwd(), "all-rgb.png")
+        img = Image.open(local_image_path)
+        img.verify()  # Verify that it is, in fact, an image
+        img = Image.open(local_image_path)  # Reopen the image
         
         hex_colors = get_hexes(img)
         print(f"Unique Hex Colors: {hex_colors}")
@@ -84,6 +80,40 @@ if __name__ == "__main__":
         # Convert hex colors to JSON
         hex_colors_json = json.dumps(hex_colors)
         
-        # Insert JSON into MongoDB
-        collection.insert_one({"hex_colors": hex_colors_json})
-        print("Hex colors inserted into MongoDB")
+        # Save JSON to testData folder in the current directory
+        test_data_path = os.path.join(os.getcwd(), "testData")
+        os.makedirs(test_data_path, exist_ok=True)
+        json_file_path = os.path.join(test_data_path, "hex_colors_local.json")
+        
+        with open(json_file_path, 'w') as json_file:
+            json_file.write(hex_colors_json)
+        print(f"Hex colors saved to {json_file_path}")
+    except UnidentifiedImageError:
+        print("Error: Cannot identify image file.")
+    except Exception as e:
+        print(f"Error: {e}")
+
+if __name__ == "__main__":
+    process_local_image()
+    # img = get_random_image()
+    # if img:
+    #     img.show()  # Display the image
+    #     image_url = img.filename
+    #     print(f"Random Image URL: {image_url}")
+        
+    #     hex_colors = get_hexes(img)
+    #     print(f"Unique Hex Colors: {hex_colors}")
+        
+    #     # Convert hex colors to JSON
+    #     hex_colors_json = json.dumps(hex_colors)
+        
+    #     # Save JSON to testData folder in the current directory
+    #     test_data_path = os.path.join(os.getcwd(), "testData")
+    #     os.makedirs(test_data_path, exist_ok=True)
+    #     json_file_path = os.path.join(test_data_path, "hex_colors.json")
+        
+    #     with open(json_file_path, 'w') as json_file:
+    #         json_file.write(hex_colors_json)
+    #     print(f"Hex colors saved to {json_file_path}")
+    
+    # Process local image
